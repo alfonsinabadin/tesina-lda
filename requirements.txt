@@ -1,0 +1,9 @@
+tidyverse
+tm
+stringdist
+topicmodels
+LDAvis
+textclean
+ggplot2
+readr
+jsonlite
