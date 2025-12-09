@@ -22,14 +22,6 @@ header-includes:
   - \usepackage{xcolor}
   - \usepackage{caption}
   - \captionsetup[table]{name=Tabla}
-  - \definecolor{mygray}{gray}{0.95}
-  - |
-      \DeclareCaptionFormat{greybox}{%
-        \colorbox{mygray}{%
-          \parbox{\dimexpr\linewidth-2\fboxsep}{\centering #1#2#3}%
-        }%
-      }
-  - \captionsetup[figure]{format=greybox, labelfont=it, textfont=it, justification=centering, singlelinecheck=false}
   - \usepackage{fancyvrb}
   - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{fontsize=\small,commandchars=\\\{\}}
 bibliography: referencias.bib
@@ -44,6 +36,15 @@ set.seed(1406)
 library(showtext)
 showtext_auto()
 font_add_google(name="Noto Serif", family = "libre")
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(DiagrammeR)
+library(webshot)
+library(ggraph)
+library(igraph)
+library(tibble)
+library(mvtnorm)
 ```
 
 ```{=tex}
@@ -129,218 +130,300 @@ El objetivo general del presente proyecto es profundizar en el estudio y aplicac
 
 ## Estadística Bayesiana
 
-La estadística bayesiana es un enfoque de la estadística que, haciendo uso del teorema de Bayes, actualiza la probabilidad de una hipótesis a medida que se dispone de más datos haciendo una combinación entre observaciones y creencias previas. A diferencia de la estadística frecuentista, que interpreta las probabilidades como frecuencias relativas de eventos en un gran número de ensayos, la estadística bayesiana trata las probabilidades como grados de creencia o confianza.
+La estadística bayesiana es un enfoque que, mediante el uso del teorema de Bayes, actualiza la probabilidad de una hipótesis a medida que se obtienen más datos, combinando las observaciones con las creencias previas. A diferencia de la estadística frecuentista, que interpreta las probabilidades como frecuencias relativas en un gran número de ensayos, la bayesiana trata la probabilidad como un grado de creencia o confianza.
 
-__Teorema de Bayes:__ Sea $\theta$ una hipótesis o conjetura que se tiene sobre el fenómeno en estudio y $E$ evidencia o nueva información al respecto, se puede actualizar el grado de incertidumbre (o creencia) de esa hipotesis teniendo en cuenta la nueva evidencia como
+Kruschke presenta una analogía muy clara para entender el concepto: si al abrir una ventana se ve el suelo mojado, es natural creer que ha llovido. Sin embargo, al abrir aún mas la ventana se observa que los autos están secos y que el agua es solo un charco junto a las plantas del vecino. La idea de la lluvia pierde toda su fuerza y la creencia cambia a que el vecino regó las plantas. De esto trata precisamente la estadística bayesiana: es la reasignación de la credibilidad en función de nueva evidencia.
 
-$$
-p(\theta|E)=\frac{p(E|\theta)p(\theta)}{p(E)}
-$$
-
-La **probabilidad a priori** es la creencia inicial sobre la hipótesis, se realiza antes de observar los datos para luego actualizarla mediante la probabilidad condicional (regla de Bayes), obteniendo así la **probabilidad posterior**. Esta probabilidad posterior se convierte en la nueva creencia actualizada después de considerar la evidencia proporcionada por los datos.
-
-En el enfoque bayesiano entonces, cada conjunto de nuevos datos permite actualizar la probabilidad posterior, lo que lo hace especialmente útil en contextos donde se obtiene información de manera continua. Por ejemplo, la puntuación de un hotel se puede actualizar con cada opinión obtenida mediante un modelo bayesiano (Figura \@ref(fig:bayes1)).
-
-```{r bayes1, fig.cap="Ejemplo de modelo bayesiano", out.width="100%", fig.align='center',echo=FALSE, warning=FALSE, message=FALSE}
-knitr::include_graphics("figs/diagrama4.png")
-```
-
-Un modelo estadístico en este contexto, integra información previa y actual y se pueden definir los modelos hacia atrás (inferencia) o los modelos hacia adelante (generativos) para el análisis de un fenómeno.
-
-### Modelos hacia atrás: inferencia bayesiana
-
-Los modelos hacia atrás se enfocan en deducir información sobre parámetros desconocidos a partir de datos observados. Este tipo de modelo es útil cuando el interés principal está en obtener conclusiones sobre aspectos no observables de una población. En este caso, la probabilidad posterior es la clave, ya que refleja el grado de creencia actualizado en los parámetros dados los datos.
-
-Continuando con el ejemplo del hotel, siendo $X$ la cantidad de veces en las que una persona puntúa a un hotel con un calificación de $i$ y $p_i$ la probabilidad de hacerlo, se tiene que $X\sim Multinomial^{(1)}(p_1,p_2,p_3,p_4,p_5)$. Estas probabilidades pueden ser modeladas utilizando la distribución $Dirichlet$ ya que permite capturar la incertidumbre sobre las probabilidades de cada categoría: modelo $Dirichlet-Multinomial$.
-
-Suponiendo inicialmente que no se tiene preferencias sobre la cantidad de estrellas, se utiliza un prior $Dirichlet$ uniforme:
+__Teorema de Bayes:__ Sea $\theta$ una hipótesis o conjetura que se tiene sobre el fenómeno en estudio e $y$ evidencia o nueva información, el grado de incertidumbre (o credibilidad) de esa hipótesis se puede actualizar teniendo en cuenta la nueva evidencia.
 
 $$
-{p}=(p_1,p_2,p_3,p_4,p_5)\sim Dirichlet(\alpha_1,\alpha_2,\alpha_3,\alpha_4,\alpha_5)
+\underbrace{p(\theta | y)}_{\substack{\text{Disribución} \\ \textit{a posteriori}}} = \frac{ \overbrace{p(y | \theta)}^{\text{Verosimilitud}} \quad \overbrace{p(\theta)}^{\text{Distribución }\textit{a priori}} }{ \underbrace{p(y)}_{\text{Evidencia}} }
 $$
 
-donde $\alpha_i=1 \space{}\space{}\space{} \forall i=1,2,3,4,5$. Luego, para cada hotel, se puede calcular la distribución posterior del vector de parámetros $p$ utilizando la fórmula de la distribución $Dirichlet$ posterior e información existente del puntaje de los hoteles.
+Donde:
 
-$$
-Dirichlet_{Hotel1} \sim (1215,418,68,9,8)
-$$
+- Distribución _a posteriori_ ($p(\theta|y)$): densidad condicional que describe la creencia del valor real de $\theta$  luego de haber observado $y$.
+- Verosimilitud ($p(y|\theta)$): describe la certeza de que $y$ sea el resultado del estudio si el conocimiento de $\theta$ fuera acertado.
+- Distirbución _a priori_ ($p(\theta)$): describe la creencia inicial que se asignó a $\theta$ antes de observar $y$. Esta asignación puede estar basada en investigaciones previas, en conocimiento personal o determinada desde la ignorancia absoluta.
+- Evidencia ($p(y)$): es la probabilidad marginal de los datos y actúa como constante de normalización para procurar que $\int p(\theta|y) d\theta = 1$ ya que $p(y)=\int_\Theta p(y|\theta)p(\theta)d\theta$.
 
-$$
-Dirichlet_{Hotel2} \sim (856,819,260,89,57)
-$$
+Dado que los datos $y$ ya fueron observados, la distribución _a posteriori_ es una función de $theta$ y resulta
 
-Con estas distribuciones se realizan 1000 simulaciones de $\bold p$ que darán cuenta de la distribución posterior de estas probabilidades. En la Figura \@ref(fig:atras1) se puede observar la densidad de cada elemento de $\bold p$ con cada posterior.
+$$p(\theta|y)\propto p(y|\theta)p(\theta)$$
 
-```{r atras1, fig.cap="Densidad de los puntajes para cada hotel", fig.align='center',echo=FALSE, warning=FALSE, message=FALSE, fig.width=5, fig.height=4, out.width="70%"}
-# Librerías
-library(ggplot2)
-library(gtools)
+Continuando con la analogía de la ventana, $p(\theta)$ es la probabilidad de que haya llovido y $p(y|\theta)$ es la probabilidad de que los autos estén secos y la humedad sea de un charco habiendo llovido. $p(\theta|y)$ es la creencia de la lluvia, dado lo observado al abrir más la ventana.
 
-# Prior Dirichlet uniforme
-alpha_prior <- c(1, 1, 1, 1, 1)
+La media de la distribución _a posteriori_ resulta en un promedio ponderado de la media previa y la media de la muestra observada. Este comportamiento determina la forma de la distribución _a posteriori_ y la ubicación de sus medidas descriptivas. La ponderación mencionada depende de la fuerza de la creencia inicial y de la cantidad de datos observados. En la Figura \@ref(fig:fig1) se puede observar el cambio en la disribución _a posteriori_ en distintos casos.
 
-# Observaciones
-observaciones_holiday_inn <- c(1214, 417, 67, 8, 7)
-observaciones_savoy <- c(855, 818, 259, 88, 56)
-
-# Posterior Dirichlet
-posterior_holiday_inn <- alpha_prior + observaciones_holiday_inn
-posterior_savoy <- alpha_prior + observaciones_savoy
-
-# Simulaciones
-sim_holiday_inn <- rdirichlet(1000, posterior_holiday_inn)
-sim_savoy <- rdirichlet(1000, posterior_savoy)
-
-# Data frame
-df_holiday_inn <- data.frame(Proporcion = c(sim_holiday_inn[, 1], sim_holiday_inn[, 2], sim_holiday_inn[, 3], sim_holiday_inn[, 4], sim_holiday_inn[, 5]), 
-                             Estrellas = factor(rep(c("Excelente", "Muy bueno", "Regular", "Malo", "Horrible"), each = 1000), 
-                                                levels = c("Excelente", "Muy bueno", "Regular", "Malo", "Horrible"), ordered = TRUE), 
-                             Hotel = "Hotel 1")
-
-df_savoy <- data.frame(Proporcion = c(sim_savoy[, 1], sim_savoy[, 2], sim_savoy[, 3], sim_savoy[, 4], sim_savoy[, 5]), 
-                       Estrellas = factor(rep(c("Excelente", "Muy bueno", "Regular", "Malo", "Horrible"), each = 1000), 
-                                          levels = c("Excelente", "Muy bueno", "Regular", "Malo", "Horrible"), ordered = TRUE), 
-                       Hotel = "Hotel 2")
-
-df <- rbind(df_holiday_inn, df_savoy)
-
-# Grafico
-ggplot(df, aes(x = Proporcion, colour = Hotel, fill = Hotel)) +
-  geom_density(alpha = 0.7) +
-  labs(x = "p", y = "Credibilidad") +
-  facet_wrap(~ Estrellas, scale = "free", nrow=5) +
-  scale_fill_manual(values = c("#84A59D","#F5CAC3")) +
-  scale_color_manual(values = c("#84A59D","#F5CAC3")) +
-  scale_x_continuous(limits=c(0,1)) +
-  theme_grey()
-```
-
-Ambos hoteles tienen baja probabilidad de tener calificaciones malas (y con mucha credibilidad), y en la calificación más alta se observa que el Hotel 1 es superadora ¿Qué sucedería si por una falla en la cocina se agregan 100 puntajes de ‘Horrible’ para este hotel? Su distribución quedaría $Dirichlet_{Hotel1} \sim (1215,418,68,9,108)$ y su nuevo posterior se modifica notoriamente, tal como se observa en la Figura \@ref(fig:atras2).
-
-```{r atras2, fig.cap="Densidad de los puntajes para cada hotel con los nuevos puntajes del Hotel 1", fig.align='center',echo=FALSE, warning=FALSE, message=FALSE, fig.width=5, fig.height=4, out.width="70%"}
-observaciones_holiday_inn_n <- c(0, 0, 0, 0, 100)
-posterior_holiday_inn_n <- posterior_holiday_inn + observaciones_holiday_inn_n
-sim_holiday_inn <- rdirichlet(1000, posterior_holiday_inn_n)
-df_holiday_inn_n <- data.frame(Proporcion = c(sim_holiday_inn[, 1], sim_holiday_inn[, 2], sim_holiday_inn[, 3], sim_holiday_inn[, 4], sim_holiday_inn[, 5]), 
-                             Estrellas = factor(rep(c("Excelente", "Muy bueno", "Regular", "Malo", "Horrible"), each = 1000), 
-                                                levels = c("Excelente", "Muy bueno", "Regular", "Malo", "Horrible"), ordered = TRUE), 
-                             Hotel = "Hotel 1")
-df <- rbind(df_holiday_inn_n, df_savoy)
-
-# Grafico
-ggplot(df, aes(x = Proporcion, colour = Hotel, fill = Hotel)) +
-  geom_density(alpha = 0.7) +
-  labs(x = "p", y = "Credibilidad") +
-  facet_wrap(~ Estrellas, scale = "free", nrow=5) +
-  scale_fill_manual(values = c("#84A59D","#F5CAC3")) +
-  scale_color_manual(values = c("#84A59D","#F5CAC3")) +
-  scale_x_continuous(limits=c(0,1)) +
-  theme_grey()
-```
-
-La inferencia bayesiana intenta asignar una cierta credibilidad a cada resultado posibile y actualizarla a medida que se recolecta información.
-
-### Modelos hacia adelante: modelo generativo
-
-Los modelos hacia adelante parten de suposiciones sobre los parámetros o las distribuciones que generan los datos y buscan modelar cómo estos datos podrían haberse producido. Este enfoque es útil para simular datos y predecir resultados futuros basados en los modelos probabilísticos definidos. En la estadística bayesiana, este proceso incluye tanto la generación de datos simulados como la comparación con datos observados para refinar modelos y creencias.
-
-Continuando con el ejemplo anterior con una perspectiva generativa, se podría buscar el puntaje promedio que le espera al Hotel 1 utilizando la última distribución posterior. Para ello se realizan 1000 simulaciones de $\bold p$ usando la distribución $Dirichlet_{Hotel 1} \sim (1215,418,68,9,108)$, así se obtiene un conjunto de 1000 vectores que le asignan diferentes probabilidades a los puntajes.
-
-```{r adelante1, fig.cap="Frecuencia esperada para cada clasificación", fig.align='center',echo=FALSE, warning=FALSE, message=FALSE, fig.width=5, fig.height=4, out.width="70%"}
-# Simulación con posterior
-n_simulaciones <- 1000
-simulaciones_nuevas <- rdirichlet(n_simulaciones, posterior_holiday_inn_n)
-
-# Nuevos puntajes para el hotel
-puntajes <- numeric()
-for (i in 1:1000) {
-  puntajes[i] <- sum(rmultinom(1,1,simulaciones_nuevas[i,])*(1:5))
-}
-
-# Data frame de puntaje promedio
-df_puntajes <- data.frame(
-  puntaje = factor(puntajes, levels = 1:5, 
-                   labels = c("Horrible", "Malo", "Regular", "Muy bueno", "Excelente"))
+```{r fig1, fig.cap= "El efecto del peso de la evidencia en la distribución *a posteriori*", echo=FALSE, warning=FALSE}
+casos <- list(
+  "A" = list(titulo = "(A) Priori fuerte + pocos datos a favor",
+             prior_mu = 10, prior_sd = 0.5,  # Prior muy angosto (seguro)
+             data_mu = 11,  data_sd = 2.0),  # Datos dispersos y cerca
+  
+  "B" = list(titulo = "(B) Priori fuerte + pocos datos en contra",
+             prior_mu = 10, prior_sd = 0.5,  # Prior muy angosto (seguro)
+             data_mu = 18,  data_sd = 2.0),  # Datos dispersos y lejos
+  
+  "C" = list(titulo = "(C) Priori débil + muchos datos a favor",
+             prior_mu = 10, prior_sd = 3.0,  # Prior plano (inseguro)
+             data_mu = 11,  data_sd = 0.5),  # Datos muy concentrados
+  
+  "D" = list(titulo = "(D) Priori débil + muchos datos en contra",
+             prior_mu = 10, prior_sd = 3.0,  # Prior plano (inseguro)
+             data_mu = 18,  data_sd = 0.5)   # Datos muy concentrados y lejos
 )
 
-# Grafico
-ggplot(df_puntajes, aes(x = puntaje)) +
-  geom_bar(binwidth = 0.1, fill = "#F28482", color = "#F28482") +
-  labs(x = "Calificación", y = "Frecuencia") +
-  theme_grey()
+# --- 2. Función para calcular la Posterior (Modelo Normal-Normal) ---
+calcular_posterior <- function(caso) {
+  # Precisiones (inverso de la varianza)
+  prec_prior <- 1 / (caso$prior_sd^2)
+  prec_data  <- 1 / (caso$data_sd^2)
+  
+  # Parámetros posteriores
+  post_prec <- prec_prior + prec_data
+  post_sd   <- sqrt(1 / post_prec)
+  post_mu   <- (prec_prior * caso$prior_mu + prec_data * caso$data_mu) / post_prec
+  
+  return(c(mu = post_mu, sd = post_sd))
+}
+
+# --- 3. Generación de Datos para el Gráfico ---
+plot_data <- data.frame()
+x_grid <- seq(2, 26, length.out = 500) # Rango del eje X
+
+for (key in names(casos)) {
+  c <- casos[[key]]
+  post <- calcular_posterior(c)
+  
+  # Generar densidades
+  df_temp <- data.frame(
+    x = x_grid,
+    Caso = c$titulo,
+    Priori = dnorm(x_grid, mean = c$prior_mu, sd = c$prior_sd),
+    Verosimilitud = dnorm(x_grid, mean = c$data_mu, sd = c$data_sd), # "Datos"
+    Posteriori = dnorm(x_grid, mean = post["mu"], sd = post["sd"])
+  )
+  
+  plot_data <- rbind(plot_data, df_temp)
+}
+
+plot_data_long <- plot_data %>%
+  pivot_longer(cols = c("Priori", "Verosimilitud", "Posteriori"), 
+               names_to = "Distribucion", 
+               values_to = "Densidad")
+
+plot_data_long$Distribucion <- factor(plot_data_long$Distribucion, 
+                                      levels = c("Priori", "Verosimilitud", "Posteriori"))
+
+ggplot(plot_data_long, 
+       aes(x = x, y = Densidad, color = Distribucion, fill = Distribucion)) +
+  geom_line(size = 0.7) +
+  geom_area(alpha = 0.5, position = "identity") +
+  facet_wrap(~Caso, scales = "free_y", ncol = 2) +
+  scale_color_manual(values = c("Priori" = "#F6BD60",        
+                                "Verosimilitud" = "#F28482", 
+                                "Posteriori" = "#84A59D")) +  
+  scale_fill_manual(values = c("Priori" = "#F6BD60", 
+                               "Verosimilitud" = "#F28482", 
+                               "Posteriori" = "#84A59D")) +
+  theme_grey(base_family = "serif") +
+  labs(iy = "Densidad de Probabilidad",
+       x = "Valor del Parámetro (θ)") +
+  theme(legend.position = "bottom",
+        strip.text = element_text(size = 9),
+        text = element_text(size = 9))
 ```
 
-Con este conocimiento sobre el comportamiento de la clasificación del Hotel 1, se podría esperar con gran credibilidad que el hotel obtenga a futuro una calificación “Horrible” o “Malo”. Sin dudas las últimas 100 calificaciones malas tuvieron gran impacto en la reputación del hotel. 
+### Modelos hacia adelante
 
-Este modelo usa la probabilidad a priori para simular cómo los datos podrían verse antes de tener datos reales. Es útil para prever el comportamiento de los datos bajo ciertas suposiciones.
+Los modelos hacia adelante parten de suposiciones sobre los parámetros o las distribuciones que generan los datos y buscan modelar cómo estos datos podrían haberse producido. Es un paso fundamental para comprender el camino por el que pasa un dato para ser observado por el modelo y permite construir $p(y,\boldsymbol\theta)=p(\boldsymbol\theta)p(y|\boldsymbol\theta)$. Este enfoque es útil para simular datos y predecir resultados futuros basados en los modelos probabilísticos definidos calculando la distribución predictiva _a posteriori_ $p(\tilde y|y)=\int p(\tilde y|\boldsymbol\theta)p(\boldsymbol\theta|y)d\theta$.
 
-### El modelo jerárquico
+Para ilustrarlo, se considera un canal de YouTube del que se tiene conocimiento de su público (mediante los comentarios). Se sabe que la comunidad opina desde dos puntos de vista: apoyo y crítica. Estas temáticas están compuestas por las siguientes palabras:
+$$\begin{split}
+\beta_{\text{apoyo}} &= \{\text{"orgullo"}:0.4, \text{"llorar"}:0.3, \text{"comprañía"}:0.2, \text{"aguante"}:0.1\} \\
+\beta_{\text{crítica}} &= \{\text{"mal"}:0.4, \text{"irrespetuoso"}:0.3, \text{"absurdo"}:0.2, \text{"llorar"}:0.1\} 
+\end{split}$$
 
-Un modelo jerárquico es una expresión que relaciona un conjunto de parámetros a través de la credibilidad de sus estimaciones, de forma que la estimación de un parámetro depende de la estimación de otro(s) parámetro(s).
+Un usuario vio un video en particular donde se toca un tema sensible para él y, si bien él es un fiel consumidor del contenido del canal, necesita presentar su opinión. Entonces, se define
 
-Por ejemplo, al estudiar la probabilidad de recuperación de una operación cardíaca con un conjunto de datos que recopila información de pacientes en distintos hospitales, diferentes ciudades y que han sido operados por diversos equipos, se debería hacer uso de un modelo jerárquico. Cada equipo quirúrgico tiene un cierto número de recuperaciones dentro de una cantidad de cirugías, entonces la probabilidad de recuperación de cada uno $\theta_e$ depende de un parámetro $\omega_h$ que describe la probabilidad típica de recuperación para el hospital, que a su vez depende de un parámetro $\alpha_c$ que describe la probabilidad a nivel ciudad.
+$$\boldsymbol\theta = [40\% \text{ apoyo}, 60\% \text{ crítica}]$$
 
-Lo que hace que el modelado jerárquico sea tan efectivo es que la estimación de cada parámetro individual se ve influenciada simultáneamente por los datos de todos los demás individuos. Esto ocurre porque todos los individuos informan a los parámetros de nivel superior, los cuales a su vez limitan todos los parámetros individuales. Estas dependencias estructurales entre parámetros proporcionan estimaciones más informadas de todos los parámetros.
+Con esta composición de comentario entonces, se propone crear uno con 5 palabras siguiendo el siguiente proceso:
 
-Los parámetros que están en distintos niveles de la jerarquía coexisten en un espacio paramétrico conjunto, independientemente del nivel al que pertenezcan, y es donde interviene la regla de Bayes. 
+Palabra 1:
 
-Formalmente, sean $\theta$ y $\omega$ dos parámetros, la regla de Bayes aplicada al espacio conjunto implica:
+1. Se selecciona un valor aleatorio que determina el tema de la palabra. Si el valor es menor a 0.6 se selecciona el tema crítica, si no se selecciona apoyo. $z_1=0.54\Rightarrow \text{tema}_1 = \text{Crítica}$.
 
-$$p(\theta,\omega|D) = \frac{p(D|\theta,\omega)p(\theta,\omega)}{p(D)}$$
-$$p(\theta,\omega|D) \propto p(D|\theta,\omega)p(\theta,\omega)$$
+2. Se toma un valor aleatorio que determina la palabra del tema. Continuando con la lógica anterior, si el valor es menor al peso de cada palabra, se selecciona la misma. $w_1=0.49\Rightarrow \text{palabra}_1=\text{"irrespetuoso"}$.
 
-Lo que resulta particular de los modelos jerárquicos es que los términos del lado derecho pueden factorizarse siguiendo una cadena estructurada de dependencias. En el caso más simple:
+Palabra 2:
 
-$$p(\theta,\omega|D)\propto p(D|\theta)\space p(\theta|\omega)\space p(\omega)$$
+1. $z=0.03\Rightarrow \text{tema}_2=\text{Crítica}$ 
 
-Esta refactorización refuerza que los datos dependen únicamente del parámetro $\theta$ y que este depende del parámetro de nivel superior $\omega$, mientras que $\omega$ es independiente del resto de los parámetros.
+2. $w_1=0.24\Rightarrow \text{palabra}_2=\text{"mal"}$
 
-### Markov Chain Monte Carlo
+Palabra 3:
 
-El objetivo principal de la inferencia bayesiana es obtener una representación acertada de la distribución posterior. Una de las maneras de hacerlo es tomar una gran muestra de puntos representativos del _posterior_, pero, por lo general, no es posible acceder de una forma explícita. Entonces se utilizan métodos de _Markov Chain Monte Carlo_ (MCMC) para aproximar dicha distribución mediante el uso de cadenas de Markov.
+1. $z=0.81\Rightarrow \text{tema}_3=\text{Apoyo}$ 
 
-Una cadena de Markov es un proceso estocástico que describe una secuencia de estados donde la probabilidad de pasar al estado siguiente depende únicamente del estado actual y no del historial previo; esta propiedad se conoce como memoria corta. En el contexto de los algoritmos MCMC, las cadenas de Markov se utilizan para generar muestras dependientes que, tras un período de convergencia, representan fielmente la distribución posterior que se desea aproximar.
+2. $w_1=0.19\Rightarrow \text{palabra}_3=\text{"orgullo"}$
 
-Uno de los algoritmos fundamentales de MCMC es el algoritmo de Metrópolis. Su idea central es que, aún sin conocer la forma exacta de la distibución objetivo, se puede construir una cadena de Markov que "visite" distintas regiones del espacio paramétrico con una frecuencia proporcional a la probabilidad posterior.
+Continuando con el resto de las palabras, se obtiene el comentario 
+$$"\underbrace{\text{irrespetuoso}}_{\text{crítica}}\quad\underbrace{\text{mal}}_{\text{crítica}} \quad \underbrace{\text{orgullo}}_{\text{apoyo}} \quad \underbrace{\text{llorar}}_{\text{crítica}} \quad \underbrace{\text{aguante}}_{\text{apoyo}}"$$ 
 
-Imaginando una avenida con muchos hoteles, cada uno con una calificación promedio (de 1 a 5 estrellas) dada por los huéspedes. Un viajero desea pasar una cantidad de noches en hoteles proporcionales a cuán bien valorados están, pero no conoce de antemano qué calificación tiene cada hotel ni cuántos hoteles hay en total.
+Este comentario claramente carece de sentido al ojo humano pero es evidente que está cargado, según $\boldsymbol\theta$, con cada tema. En la vida real, se conoce el comentario pero no se tiene en claro las intenciones del usuario al comentar ni las palabras que pertenecen a él ni a los temas. El verdadero desafío es descubrir qué parámetros (en este caso $\beta_{\text{apoyo}}, \beta_{\text{crítica}}$ y $\boldsymbol\theta$) son los que han afectado en el modelo para la creación del comentario.
 
-Entonces, el viajero procede a:
+### Modelos hacia atrás
 
-1. Elegir al azar un hotel vecino que quiera visitar.
+El modelo hacia atrás, formalmente denominado inferencia bayesiana, es el proceso inverso al modelado generativo. Mientras que el modelo hacia adelante simula datos a partir de parámetros conocidos, el modelo hacia atrás parte de los datos observados (el efecto) para reconstruir las distribuciones de probabilidad de los parámetros latentes que los generaron (la causa). Su objetivo fundamental es derivar la distribución _a posteriori_, actualizando las creencias previas mediante la aplicación del teorema de Bayes.
 
-2. Si la calificación del hotel propuesto es mayor a la del hotel actual, acepta el cambio y se muda.
+Para ilustralo, se toma el comentario generado en el ejemplo anterior y se intenta buscar o entender qué pasó por la mente del usuario, sabiendo el vocabulario de cada tema $\beta_{\text{apoyo}}$ y $\beta_{\text{crítica}}$.  
 
-3. Si la calificación del hotel propuesto es menor, decide mudarse si el cociente entre ambas calificaciones es mayor que un número aleatorio entre 0 y 1. De esta manera, existe la posibildiad de mudarse a hoteles peores, aunque sea una noche, sin perder de vista el objetivo inicial.
+A cada palabra se le identifica el tema más probable según su peso en el vocabulario: $"\underbrace{\text{irrespetuoso}}_{\text{crítica}}\quad\underbrace{\text{mal}}_{\text{crítica}} \quad \underbrace{\text{orgullo}}_{\text{apoyo}} \quad \underbrace{\text{llorar}}_{\text{apoyo}} \quad \underbrace{\text{aguante}}_{\text{apoyo}}"$. Sumando los casos de cada tema, se obtienen $3$ palabras del tema apoyo y $2$ para crítica, entonces $\hat{\boldsymbol\theta}=[60\% \text{ apoyo}, 40\% \text{ crítica}]$. Se observa que el resutado de $\hat{\boldsymbol\theta}$ difiere del $\boldsymbol\theta$ que generó el mismo comentario, esto se debe a la repetición de la palabra $\text{"llorar"}$ en ambos temas y al peso que tiene en cada uno.
 
-4. Si no se muda, permanece en el hotel actual y vuelve a proponer un nuevo movimiento al día siguiente.
+### Modelos jerárquicos
 
-Después de suficientes noches, el viajero terminará pasando más tiempo en los hoteles con mejores calificaciones, aunque nunca haya conocido el mapa completo de hoteles ni sus valores globales.
+Cuando se cuenta con datos de muchas fuentes que están relacionadas de alguna manera, se hace uso de los modelos jerárquicos. Estos proveen un marco matemático para describir las dependencias entre múltiples parámetros, de forma que la estimación de un parámetro depende de la estimación de otro(s) parámetro(s).
 
-El algoritmo de Metropolis funciona de manera análoga:
+Un modelo es jerárquico si puede factorizaste en una cadena de dependencias con niveles:
 
-- la calle con hoteles representa el espacio paramétrico,
+1. Nivel inferior (verosimilitud): describe la distribución de los datos en función de los parámetros.
+2. Nivel intermedio ( _priori_ ): describe la distribución de los parámetros que afectan a la verosimilitud. Esta depende de parámetros provenientes de una distribución más grande, definida por hiper-parámetros.
+3. Nivel superior ( _priori_ de los hiper-parámetros): describe la distribución de los hiper-parámetros.
 
-- la calificación de cada hotel es el valor de la densidad posterior en ese punto,
+La fuerza de los modelos jerárquicos es su adaptabilidad a distintos casos de estudio ya que se pueden aplicar a modelos con múltiples dependencias (niveles escalables) y a parámetros clasificados según un agrupamiento. Por ejemplo, para un caso de dos grupos, el modelo jerárquico se vería como en la Figura \@ref(fig:fig2).
 
-- el movimiento probabilístico entre hoteles replica el criterio de aceptación del algoritmo.
+```{r fig2, fig.cap= "Diagrama del flujo de un modelo jerárquico a 3 niveles con dos grupos", echo=FALSE, warning=FALSE, fig.align='center', fig.width=10,fig.height=7, out.width="90%"}
+library(knitr)
+knitr::include_graphics("figs/modelo_jerarquico.png")
+```
 
-Así, incluso sin conocer la forma completa de la distribución posterior, el algoritmo garantiza que puntos con mayor probabilidad posterior serán visitados con mayor frecuencia, permitiendo aproximar la distribución a posteriori mediante las muestras generadas.
+La distribución _a posteriori_ dependerá de todos los parámetros existentes en el modelo. Sea $y_{ij}$ la observación i-ésima del grupo j, donde $i=\overline{1,n}$ y $j = \overline{1,k}$, se tiene que:
 
-#### Muestreo de Gibbs {-}
+$$\begin{split}
+p(\boldsymbol\theta,\boldsymbol\Psi|\boldsymbol y) &\propto p(\boldsymbol y|\boldsymbol\theta, \boldsymbol\Psi) p(\boldsymbol\theta,\boldsymbol\Psi) \\
+&\propto \Biggl{(}\prod_{i=1}^n\prod_{j=1}^kp(y_{ij}|\theta_j,\boldsymbol\Psi)\Biggl{)}\Biggl{(}\prod_{j=1}^kp(\theta_j|\boldsymbol\Psi)p(\boldsymbol\psi)\Biggl{)} \\
+&\propto \underbrace{\prod_{i=1}^n\prod_{j=1}^kp(y_{ij}|\theta_j,\boldsymbol\Psi)}_{\text{verosimilitud}} \quad \underbrace{\prod_{j=1}^kp(\theta_j|\boldsymbol\Psi)}_{\textit{priori}} \quad 
+\underbrace{p(\boldsymbol\psi)}_{\textit{hiper-priori}}
+\end{split}$$
 
-Aunque el algoritmo de Metropolis resulta intuitivo y conceptualmente simple, su aplicación directa a modelos con muchos parámetros presenta limitaciones importantes. En espacios paramétricos de alta dimensión, proponer un nuevo valor para todo el vector de parámetros a la vez suele conducir a propuestas muy alejadas del estado actual, lo que provoca tasas de aceptación extremadamente bajas. Alternativamente, propuestas demasiado pequeñas generan cadenas que avanzan muy lentamente. En ambos casos, la eficiencia del muestreo disminuye drásticamente y la cadena puede tardar mucho tiempo en explorar adecuadamente la distribución posterior.
+Para ilustrar el concepto con el caso del usuario y su comentario en YouTube, se presenta el modelo de la Figura \@ref(fig:fig3). Para cada comentario, se asigna una mezcla de temas $\boldsymbol\theta$ y, para cada posición $i=\overline {1,n}$ en el comentario:
 
-Una estrategia natural para mitigar estos problemas consiste en actualizar un parámetro a la vez, manteniendo los demás fijos. Esta idea convierte una propuesta multidimensional en una secuencia de propuestas unidimensionales mucho más manejables. Si, además, el modelo es jerárquico y utiliza distribuciones conjugadas, es posible obtener las distribuciones condicionales completas de cada parámetro: distribuciones exactas que describen cómo debería comportarse un parámetro dado el valor actual de todos los demás.
+1. Se elige un tópico según $\boldsymbol\theta$,
+2. se elige una palabra del tópico según $\boldsymbol\beta$.
 
-El algoritmo _Gibbs Sampling_ surge como una alternativa eficiente al algoritmo de Metropolis en modelos con múltiples parámetros y estructura jerárquica. En lugar de generar propuestas arbitrarias y luego decidir si aceptarlas, Gibbs actualiza cada parámetro muestreándolo directamente de su distribución condicional completa, es decir, la distribución del parámetro dado el valor actual de todos los demás. Debido a que estas condicionales provienen de la propia estructura del modelo, cada actualización es automáticamente coherente con la distribución objetivo y, por lo tanto, la probabilidad de aceptación es siempre uno. En este sentido, Gibbs puede verse como un caso particular del algoritmo de Metropolis en el que las propuestas nunca se rechazan.
+```{r fig3, fig.cap= "Diagrama del flujo de un modelo jerárquico a 3 niveles con dos grupos", echo=FALSE, warning=FALSE, fig.align='center', fig.width=10, fig.height=7, out.width="90%"}
+library(knitr)
+knitr::include_graphics("figs/modelo_jerarquico_ejemplo.png")
+```
 
-En téminos formales, si el vector de parámetros es $\theta=(\theta_1,...,\theta_p)$, el algoritmo consiste en actualizar secuencialmente cada componente muestreando las distribuciones:
+Al definir un modelo jerárquico se establecen dependencias condicionales entre parámetros e hiperparámetros. Sin embargo, surge un desafío matemático inmediato: al multiplicar la distribución _a priori_ por la verosimilitud (según la Regla de Bayes), la expresión resultante suele ser matemáticamente intratable, dificultando la obtención de la distribución _a posteriori_. Para sortear este obstáculo, la estadística bayesiana recurre a las distribuciones conjugadas.
 
-$$\theta_1^{t+1}\sim p(\theta_1|\theta_2^{(t)}, \theta_3^{(t)},...,D),$$
-$$\theta_2^{t+1}\sim p(\theta_2|\theta_1^{(t)}, \theta_3^{(t)},...,D)$$
+Se dice que una familia de distribuciones es conjugada respecto a una función de verosimilitud cuando la distribución _a posteriori_ resultante pertenece a la misma familia paramétrica que la distribución _a priori_. La principal ventaja de utilizar estas parejas es que transforma un problema complejo de integración en una simple operación aritmética: los parámetros de la _a posteriori_ se obtienen sumando los conteos de los datos observados a los hiperparámetros originales.
 
-Tras suficientes iteraciones, esta secuencia de actualizaciones genera una cadena de Markov cuya distribución estacionaria coincide con la distribución posterior conjunta, permitiendo aproximarla mediante las muestras de la cadena.
+Un ejemplo clásico es el modelo Beta-Binomial. Sea una variable aleatoria $Y \sim \text{Binomial}(n, \theta)$ con  $\theta \sim \text{Beta}(\alpha, \beta)$, la distribución resultante es también una Beta, específicamente $\theta|y \sim \text{Beta}(\alpha + y, \beta + n - y)$.
+
+**¿Hace falta hacer un apartado y explicar al menos dos conjugadas con demostración? Ejemplo beta-binomial caso univariado y dirichlet-multinomial para el multivariado, siento que no resta pero no suma tampoco ya que no se usa...**
+
+A pesar de su elegancia matemática, el uso exclusivo de distribuciones conjugadas puede resultar restrictivo, limitando la flexibilidad del modelado para representar fenómenos complejos. Cuando el cálculo analítico exacto de la distribución _a posteriori_ resulta imposible, es necesario recurrir a métodos de aproximación.
+
+### Métodos de aproximación
+
+En modelos bayesianos de alta dimensionalidad, como LDA, obtener la distribución _a posteriori_ implica resolver una integral sobre el espacio conjunto de todos los parámetros (el denominador de Bayes). Esta operación es computacionalmente inviable excepto en casos triviales, razón por la cual la aplicación práctica de la inferencia bayesiana se vio históricamente limitada.
+
+Sin embargo, con el avance de la capacidad computacional, surgieron métodos de aproximación estocástica. El objetivo central de estos algoritmos no es calcular la fórmula exacta de la distribución, sino obtener una muestra representativa de valores simulados que converjan a la distribución _a posteriori_ objetivo.
+
+#### Markov chain Monte Carlo
+
+Un método de aproximación de la distirbución _a posteriori_ son las cadenas de Markov Monte Carlo (MCMC, por sus siglas en inglés) que, mediante un algoritmo iterativo, genera una secuencia de valores cuya distribución, después de un número suficiente de pasos, converge a la deseada.
+
+El algoritmo hace uso de cadenas de Markov, un proceso donde el sigueinte paso depende únicamente del paso actual (se le llama propiedad de falta de memoria). Matemáticamente $P(X_{t+1}|X_t,...,X_2,X_1)=P(X_{t+1}|X_t)$.
+
+Existen algunos algoritmos MCMC que determinan cómo se dan los pasos, como metrópolis-hastings, hamiltonian Monte Carlo y Gibbs, que será descrita en detalle ya que se utiliza en la aplicación de LDA.
+
+Para garantizar que el resultado de MCMC es fiable, se utilizan estadísticos de diagnóstico:
+
+- $\hat R$ (estadístico de Gelman-Rubin): compara la varianza entre cadenas inicializadas en puntos dispersos con la varianza intra-cadena. Un $\hat R \approx 1$ implica una buena mezcla y convergencia.
+- $ACF$ (autocorrelación): mide la dependencia entre pasos sucesivos. Un alto valor de $ACF$ implica una cadena ineficiente.
+- $ESS$ (tamaño efectivo de muestra): calcula el número de muestras independientes que equivalen a la cantidad de información obtenida de la muestra. Un $ESS$ bajo en comparación al tamaño de la cadena implica un muestreo ineficiente.
+
+#### Muestreo de Gibbs
+
+El muestreo de Gibbs es un algoritmo iterativo que construya una secuencia dependiente de valores de parámetros. Se trata de un caso especial de metrópolis-hastings con una tasa de aceptación del $100\%$ (nunca se rechazan las muestras). Opera explorando la condicionalidad.
+
+$$p(x|y)=\frac{p(x,y)}{p(y)}\propto p(x,y)$$
+
+Para ilustrar el algoritmo se plantea un caso bivariado para obtener la distribución de $(x,y)$. El algoritmo de Gibbs procede de la siguiente manera:
+
+Paso 0 (inicialización): Se establecen valores iniciales arbitrarios para los parámetros, denotados como $(x^{(0)}, y^{(0)})$.
+
+Paso s (Iteración): Para generar la muestra en la iteración $s$ (donde $s = 1, 2, \dots$):
+
+1. Actualización de $x$: Se genera un nuevo valor $x^{(s)}$ muestreando de su distribución condicional, condicionada al valor más reciente de $y$.
+
+$$x^{(s)} \sim p(x \mid y^{(s-1)})$$
+
+2. Actualización de $y$: Se genera un nuevo valor $y^{(s)}$ muestreando de su distribución condicional, condicionada al valor de $x$ que acaba de ser actualizado en el paso anterior.
+
+$$y^{(s)} \sim p(y \mid x^{(s)})$$
+
+El par $(x^{(s)}, y^{(s)})$ constituye la nueva muestra de la cadena de Markov.
+
+Este ciclo se repite un gran número de veces. Bajo condiciones de regularidad, la secuencia de pares generada $\{(x^{(s)}, y^{(s)})\}$ converge en distribución a la distribución conjunta objetivo $p(x, y)$. En la figura \@ref(fig:fig4) se puede observar el caso presentado: las observaciones de $(x,y)$ tienden a acercarse a la zona de alta probabilidad.
+
+```{r fig4, fig.cap= "Exploración del espacio conjnto de (X,Y) mediante muestreo de Gibbs", echo=FALSE, warning=FALSE, fig.height=7, out.width="50%", fig.align='center'}
+mu <- c(10, 10)
+sigma <- matrix(c(5, 4, 4, 5), nrow = 2) 
+
+grid_x <- seq(0, 20, length.out = 100)
+grid_y <- seq(0, 20, length.out = 100)
+grid <- expand.grid(x = grid_x, y = grid_y)
+grid$z <- dmvnorm(grid, mean = mu, sigma = sigma)
+
+gibbs_step_x <- function(y_current, mu, sigma) {
+  rho <- sigma[1,2] / sqrt(sigma[1,1] * sigma[2,2])
+  mu_cond <- mu[1] + rho * (sqrt(sigma[1,1])/sqrt(sigma[2,2])) * (y_current - mu[2])
+  sigma_cond <- sigma[1,1] * (1 - rho^2)
+  rnorm(1, mu_cond, sqrt(sigma_cond))
+}
+
+gibbs_step_y <- function(x_current, mu, sigma) {
+  rho <- sigma[1,2] / sqrt(sigma[1,1] * sigma[2,2])
+  mu_cond <- mu[2] + rho * (sqrt(sigma[2,2])/sqrt(sigma[1,1])) * (x_current - mu[1])
+  sigma_cond <- sigma[2,2] * (1 - rho^2)
+  rnorm(1, mu_cond, sqrt(sigma_cond))
+}
+
+set.seed(123)
+n_iter <- 15 
+samples <- matrix(NA, nrow = n_iter, ncol = 2)
+colnames(samples) <- c("x", "y")
+
+current_x <- 2
+current_y <- 18
+samples[1, ] <- c(current_x, current_y)
+
+for (i in 2:n_iter) {
+  current_x <- gibbs_step_x(current_y, mu, sigma)
+  current_y <- gibbs_step_y(current_x, mu, sigma)
+  samples[i, ] <- c(current_x, current_y)
+}
+df_samples <- as.data.frame(samples)
+df_samples$iter <- 1:n_iter
+
+ggplot() +
+  stat_contour(data = grid, aes(x = x, y = y, z = z), bins = 6, color = "grey40") +
+  geom_path(data = df_samples, aes(x = x, y = y), color = "#F28482", size = 0.8, arrow = arrow(length = unit(0.2, "cm"))) +
+  geom_point(data = df_samples, aes(x = x, y = y), color = "#F28482", size = 2) +
+  annotate("text", x = df_samples[1,1], y = df_samples[1,2], label = "Inicio", vjust = -1) +
+  coord_fixed() +
+  theme_grey(base_family = "serif") +
+  labs(x = "Variable X", y = "Variable Y") +
+  theme(text = element_text(size = 9, family = "serif"))
+
+```
+
 
 ## Machine learning
 
@@ -369,6 +452,7 @@ El texto, tal como lo leemos y comprendemos los humanos, es rico en significado 
 El proceso abarca tareas como la recolección, limpieza, normalización y tokenización de texto, estas últimas dos son las responsables de que la información textual pueda ser estructurada de manera que los modelos la interpreten y analicen eficazmente. En la Figura \@ref(fig:diagrama1)  [@vajjala2020] se pueden observar los pasos que comprende el proceso.
 
 ```{r diagrama1, fig.cap="Etapas del NLP", out.width="100%", fig.align='center',echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
 knitr::include_graphics("figs/diagrama1.png")
 ```
 
@@ -578,8 +662,7 @@ El paquete `UDPipe` implementa modelos de *Universal Dependencies* que permiten 
 
 ```{r message=FALSE, warning=FALSE, results='hide'}
 library(udpipe)
-modelo <- udpipe_download_model(language = "spanish-gsd")
-udmodel <- udpipe_load_model(file = modelo$file_model)
+udmodel <- udpipe_load_model("spanish-gsd-ud-2.5-191206.udpipe")
 texto <- c("Los estudiantes estaban estudiando en la biblioteca.")
 anot <- udpipe_annotate(udmodel, x = texto, doc_id = 1)
 ```
@@ -965,6 +1048,49 @@ kable(pal_temas, "latex", booktabs = TRUE,
 ```
 
 \newpage
+
+## Latent Dirichlet allocation
+
+La técnica de _latent Dirichlet allocation_ (LDA) fue introducida por David M. Blei, Andrew Y. Ng y Michael I. Jordan (2003) como un modelo generativo probabilístico para colecciones de datos discretos, como lo son los corpus textuales. El objetivo central de LDA es descubrir temas latentes o escondidos dentro de un conjunto de documentos bajo la hipótesis de que cada documento está compuesto por una mezcla de varios temas, y que cada tema está definido por una distribución de palabras.
+
+En LDA, una palabra se denomina como la unidad básica de los datos, es un elemento de un vocabulario indexado por $\{1,2,...,V\}$ y se representa como un vector de base unitaria de dimensión $V$. En este sentido, la palabra en la posición $v$ del vocabulario, es un vector $w$ donde $w_v=1$ y $w_u = 0$ $\forall u \neq v$. Teniendo esta definición, un documento es una secuencia de $N$ palabras $\boldsymbol w =(w_1,w_2,...,w_N)$ y un corpus es una colección de $M$ documentos $D=\{\boldsymbol w _1, \boldsymbol w _2,..., \boldsymbol w _M\}$
+
+El modelo define a un tema como una distribución de probabilidad sobre un vocabulario, es decir, una lista de palabras posibles donde cada una tiene una probabilidad asociada. Así, si se presenta un tema que tiene probabilidad alta en palabras como "investigación", "datos", "experimento" o "célula" y una baja probabilidad en palabras como "fútbol" o "presidente", se puede definir como _ciencia_. LDA solo ve patrones de palabras que coexisten y luego, el ojo humano, le pone la etiqueta. 
+
+LDA asume el siguiente proceso generativo para cada documento $\boldsymbol w$ en $D$:
+
+\begin{enumerate}
+\item Se selecciona una cantidad de palabras $N\sim Poisson(\xi)$,
+\item se selecciona una distribución de temas $\theta\sim Dirichlet(\boldsymbol\alpha)$,
+\item para cada posición $n$ en el documento:
+\begin{enumerate}
+\item se selecciona un tema $z_n \sim Multinomial(\boldsymbol\theta)$,
+\item se selecciona una palabra $w_n$ de $p(w_n|z_n, \boldsymbol\beta)$, una función de probabilidad condicionada por el tema.
+\end{enumerate}
+\end{enumerate}
+
+Asi, se define la distribución conjunta de la mezcla de temas, el conjunto de temas y el conjunto de palabras como
+
+$$p(\boldsymbol\theta, \boldsymbol z, \boldsymbol w | \boldsymbol\alpha, \boldsymbol\beta )=p(\boldsymbol\theta|\boldsymbol\alpha)\times p(\boldsymbol z|\boldsymbol\theta) \times p(\boldsymbol w|\boldsymbol\beta, \boldsymbol z)$$
+
+
+
+
+
+
+
+
+
+
+
+Sea $\boldsymbol\theta$ un vector aleatorio de dimensión $K>2$ donde $\theta_i\in[0,1]$ $\forall i=1, 2,...,K$ y $\sum_{i=1}^K \theta_i = 1$, se puede decir que $\boldsymbol\theta\sim Dirichlet(\boldsymbol\alpha)$ donde $\boldsymbol\alpha$ es un vector de probabilidades de dimensión $K$.
+
+La función de probabilidad está dada por
+$$f(\boldsymbol\theta;\boldsymbol\alpha) = \frac{1}{B(\boldsymbol\alpha)}\prod_{i=1}^K \theta_i^{\alpha_i-1}$$
+
+Esta distribución es una generalización de la distribución Beta, y es llamada la distribución de distribuciones.
+
+
 
 # Bibliografía
 
