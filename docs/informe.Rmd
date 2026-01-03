@@ -427,19 +427,13 @@ ggplot() +
 
 ## Machine learning
 
-El Aprendizaje Automático (_machine learning_, ML) es una rama de la inteligencia artificial que permite a las computadoras aprender patrones y tomar decisiones a partir de datos, sin ser programadas explícitamente para cada tarea. Es especialmente útil en problemas complejos, donde hay muchas reglas por seguir y/o entornos inconsistentes ya que los modelos de ML se adaptan fácilmente a nuevos datos.
+El aprendizaje automático (_machine learning_, ML) es una rama de la inteligencia artificial que permite a las computadoras aprender patrones y tomar decisiones a partir de datos, sin ser programadas explícitamente para cada tarea. Es especialmente útil en problemas complejos, donde hay muchas reglas por seguir y/o entornos inconsistentes ya que los modelos de ML se adaptan fácilmente a nuevos datos.
 
 Un ejemplo utilizado en lo cotidiano es el filtro de _spam_ de la casilla de correo electrónico. Con algunos ejemplos de correos _spam_ y correos legítimos o _ham_ (datos de entrenamiento), el código detrás del filtro logra aprender la naturaleza de cada uno de estos elementos, logrando así clasificar nuevos casos. Los modelos de ML se evalúan con métricas de _performance_ que se miden con datos de prueba.
 
-Los sitemas de _machine learning_ se pueden clasificar en función de la cantidad de supervisión que reciben en el entrenamiento. 
+Los sitemas de _machine learning_ se pueden clasificar en función de la cantidad de supervisión que reciben en el entrenamiento entre supervisados y no supervizados. 
 
-### Aprendizaje supervisado
-
-En el aprendizaje supervisado, los datos de entrenamiento que se usan como entrada al algoritmo incluyen los resultados deseados ( _labels_ ). Por ejemplo, si el filtro de _spam_ recibe correos con la etiqueta _spam_ y _ham_ en el entrenamiento, se está hablando de un aprendizaje supervisado.
-
-Entre las técnicas más importantes del aprendizaje supervisado se encuentran _k-nearest neighbors_ (KNN), regresión lineal, regresión logística, _support vector machine_ (SVM), árboles de decisión, _random forest_, redes neuronales, etc.
-
-### Aprendizaje no supervisado
+En el aprendizaje supervisado, los modelos se entrenan con un conjunto de datos que ya cuenta con las respuestas del modelo (datos de entrenamiento). Por ejemplo, si un filtro de _spam_ recibe correos con la etiqueta _spam_ y _no spam_ en el entrenamiento, se está hablando de un aprendizaje supervisado. Entre las técnicas más importantes del aprendizaje supervisado se encuentran _k-nearest neighbors_ (KNN), regresión lineal, regresión logística, _support vector machine_ (SVM), árboles de decisión, _random forest_, redes neuronales, etc.
 
 En el aprendizaje no supervisado, los datos de entrenamiento no cuentan con etiquetas, se dice que el sistema intenta aprender sin profesor. Por ejemplo, si se quisiera agrupar a clientes de un negocio según su consumo, el algoritmo detecta las similitudes y diferencias entre ellos y define un agrupamiento que será evaluado con las métricas de _performance_ y ajustado según su resultado.
 
@@ -507,29 +501,15 @@ La tokenización es un paso fundamental en el procesamiento del lenguaje natural
 - A nivel de carácter: cada token es un único carácter (letra, signo de puntuación, número, etc.). Ejemplo: “sol” → [“s”, “o”, “l”].
 - A nivel de oración: cada token corresponde a una oración completa. Ejemplo: “Hoy llueve. Mañana saldrá el sol.” → [“Hoy llueve.”, “Mañana saldrá el sol.”].
 
-#### Normalización de Unicode {-}
+#### Normalización de unicode {-}
 
-Al limpiar texto, especialmente que se ha obtenido a través de Web Scrapping, es posible que se encuentren varios caracteres Unicode, incluidos símbolos, emojis y otros caracteres gráficos, algunos ejemplos se muestran en la Figura \@ref(fig:diagrama2) [@vajjala2020].
+Al limpiar texto, especialmente que se ha obtenido a través de _web scrapping_, es posible que se encuentren varios caracteres _unicode_, incluidos símbolos, emojis y otros caracteres gráficos, algunos ejemplos se muestran en la Figura \@ref(fig:diagrama2) [@vajjala2020].
 
 ```{r diagrama2, fig.cap="Caracteres Unicode y su representación gráfica", out.width="100%", fig.align='center',echo=FALSE, warning=FALSE, message=FALSE}
 knitr::include_graphics("figs/diagrama2.png")
 ```
 
-Para interpretar estos símbolos no textuales y caracteres especiales se utiliza la normalización de Unicode, que convierte el texto en alguna forma de representación binaria para ser almacenado en una computadora. Existen varios esquemas de codificación, y la codificación predeterminada puede variar según el sistema operativo. 
-
-El siguiente fragmento de código en R ejemplifica la limpieza de emojis en texto. Utilizando expresiones regulares, se eliminan todos los caracteres que no pertenezcan al alfabeto en minúsculas.
-
-```{r warning=FALSE, message=FALSE, size='small'}
-comentarios <- c(
-  "Me encantó este video 😍🔥", "Lo volvería a ver!!! 💯✔️",
-  "Qué aburrido 😴😴 no me gustó", "Muy bueno!!! 👍👏👏"
-)
-comentarios_limpios <- gsub("[^a-záéíóúñ ]", " ", tolower(comentarios))
-comentarios_limpios <- stringr::str_squish(comentarios_limpios)
-comentarios_limpios
-```
-
-La salida es un conjunto de comentarios donde los emojis y otros símbolos fueron eliminados, manteniendo únicamente el texto en minúsculas y sin caracteres no deseados.
+Para interpretar estos símbolos no textuales y caracteres especiales se utiliza la normalización de _unicode_, que convierte el texto en alguna forma de representación binaria para ser almacenado en una computadora. Existen varios esquemas de codificación, y la codificación predeterminada puede variar según el sistema operativo. En términos generales, se eliminan todos los caracteres que no pertenecen al alfabeto.
 
 #### Eliminación de stopwords {-}
 
@@ -554,15 +534,6 @@ kable(df, format = "latex", booktabs = TRUE,
       caption = "Algunas stopwords del paquete",
       col.names = NULL) %>%
   kable_styling(latex_options = c("HOLD_position", "scale_down", "striped"))
-```
-
-```{r warning=FALSE, message=FALSE}
-library(tm)
-prueba <- c(
-  "gracias por el dato",
-  "esto es una joya"
-)
-removeWords(prueba,stopwords("es"))
 ```
 
 #### Corrección ortográfica {-}
@@ -708,7 +679,7 @@ Un resultado de 1 implica similitud total (el ángulo $θ$ es $0º$), y un resul
 
 #### One-Hot Encoding {-}
 
-Una de las formas más sencillas y fundamentales de representar texto numéricamente es mediante la codificación _One-Hot_. En este enfoque, cada palabra $V$ del corpus se asocia a un identificador único y se representa como un vector binario de dimensión $|V|$. Este vector está compuesto de todos ceros, excepto en la posición correspondiente a la palabra en el vocabulario, donde se ubica un 1.
+Una de las formas más sencillas y fundamentales de representar texto numéricamente es mediante la codificación _One-Hot_. En este enfoque, cada palabra $v$ del corpus $V$ se asocia a un identificador único y se representa como un vector binario de tamaño igual a $V$. Este vector está compuesto de todos ceros, excepto en la posición correspondiente a la palabra en el vocabulario, donde se ubica un 1.
 
 Para ilustrar, se considera el siguiente corpus:
 
@@ -775,23 +746,23 @@ ggplot(matriz_melted, aes(Var1, Var2, fill = value)) +
 
 #### TF-IDF {-}
 
-TF-IDF (_Term Frequency-Inverse Document Frequency_) es una técnica fundamental que refina a BoW al asignar pesos distintos a las palabras, destacando la importancia de aquellas que son relevantes en un documento específico pero raras en el conjunto total de documentos (corpus).
+TF-IDF (_Term Frequency-Inverse Document Frequency_) es una técnica fundamental que refina BoW al asignar pesos distintos a las palabras, destacando la importancia de aquellas que son relevantes en un documento específico pero raras en el conjunto total de documentos (corpus).
 
 El valor TF-IDF para una palabra $t$ en un documento $d$ se calcula como el producto de dos componentes:
 
-$$ TF-IDF(t,d)=TF(t,d)IDF(t) $$
+$$ TF\text{-}IDF(t,d)=TF(t,d)IDF(t) $$
 
 Donde:
 
 - TF mide la frecuencia de un término en un documento, normalizada por la cantidad total de términos en ese documento:
 
-$$TF(t,d)=\frac{\text{Nº ocurrencias de t en d}}{\text{Total de términos en d}}$$
+$$TF(t,d)=\frac{\text{Nº ocurrencias de }t\text{ en }d\text{}}{\text{Total de términos en }d}$$
 
 - IDF mide la rareza de una palabra a lo largo de todos los documentos. Esta métrica penaliza los términos comunes (como artículos o preposiciones) y valora los poco frecuentes, lo que aumenta su poder discriminatorio:
 
-$$IDF(t)=\log\biggl(\frac{\text{Nº total de documentos}}{\text{Nº de documentos donde aparece t}}\biggl)$$
+$$IDF(t)=\log\biggl(\frac{\text{Nº total de documentos}}{\text{Nº de documentos donde aparece }t}\biggl)$$
 
-Para el ejemplo de las 4 oraciones, un término como "perro" aparece en dos documentos, por lo que su IDF es más bajo que el de un término como "ladra", que aparece solo una vez. Esto hace que "ladra" sea más "relevante" para el documento D3 que lo que es "perro" para D1. En la Tabla \@ref(tab:tablatfidf) se puede observar el resulado del cálculo detallado que realiza la técnica para las 4 oraciones. 
+Para el ejemplo de las 4 oraciones, un término como "perro" aparece en dos documentos, por lo que su IDF es más bajo que el de un término como "ladra", que aparece solo una vez. Esto hace que "ladra" sea más relevante para el documento D3 que lo que es "perro" para D1. En la Tabla \@ref(tab:tablatfidf) se puede observar el resulado del cálculo detallado que realiza la técnica para las 4 oraciones. 
 
 ```{r tablatfidf, echo=FALSE, warning=FALSE, message=FALSE}
 library(proxy)
@@ -851,7 +822,7 @@ Ambas arquitecturas se basan en minimizar una función de pérdida que optimiza 
 
 #### GloVe  {-}
 
-_GloVe_ (_Global Vectors for Word Representation_), presentado por Pennington et al. en 2014, surgió como un enfoque híbrido que combina las ventajas de los modelos predictivos locales ( _Word2Vec_ ) y las estadísticas de co-ocurrencia globales del corpus.
+_GloVe_ (_Global Vectors for Word Representation_), presentado por Pennington et al. en 2014, surgió como un enfoque híbrido que combina las ventajas de los modelos predictivos locales (_Word2Vec_) y las estadísticas de co-ocurrencia globales del corpus.
 
 A diferencia de _Word2Vec_, que se entrena solo con ventanas locales, _GloVe_ optimiza una función de costo que relaciona directamente el producto escalar de los vectores de dos palabras ($w_i^T \tilde{w}_j$) con el logaritmo de su frecuencia de co-ocurrencia en todo el corpus ($\log X_{ij}$).
 
@@ -863,9 +834,9 @@ Donde $X_{ij}$ es el número de veces que la palabra $j$ aparece en el contexto 
 
 #### BERT  {-}
 
-Con la introducción de _BERT_ ( _Bidirectional Encoder Representations from Transformers_ ) por Devlin et al. en 2018, la representación de texto experimentó un cambio fundamental, pasando de embeddings estáticos (como _Word2Vec_ y _GloVe_) a embeddings contextuales. _BERT_ se basa en la arquitectura _Transformer_, la cual utiliza mecanismos de auto-atención para evaluar las dependencias entre todas las palabras de una secuencia simultáneamente.
+Con la introducción de _BERT_ (_Bidirectional Encoder Representations from Transformers_) por Devlin et al. en 2018, la representación de texto experimentó un cambio fundamental, pasando de embeddings estáticos (como _Word2Vec_ y _GloVe_) a embeddings contextuales. _BERT_ se basa en la arquitectura _Transformer_, la cual utiliza mecanismos de auto-atención para evaluar las dependencias entre todas las palabras de una secuencia simultáneamente.
 
-La innovación clave de _BERT_ es su capacidad de entrenamiento bidireccional. El modelo procesa la secuencia completa, permitiendo que la representación vectorial de una palabra se base en el contexto que le precede y el que le sigue. Esto resuelve la ambigüedad semántica: la palabra "banco" tendrá un vector distinto si aparece en la frase "banco del río" o "banco financiero", ya que el modelo captura el significado específico dado por el contexto.
+La innovación clave de _BERT_ es su capacidad de entrenamiento bidireccional. El modelo procesa la secuencia completa, permitiendo que la representación vectorial de una palabra se base en el contexto que le precede y el que le sigue. Esto resuelve la ambigüedad semántica que presentaban los otros métodos, ya que el modelo captura el significado específico de una palabra con el contexto y no lo toma como un elemento aislado.
 
 El modelo se preentrena sobre grandes volúmenes de texto mediante dos tareas:
 
@@ -875,222 +846,7 @@ El modelo se preentrena sobre grandes volúmenes de texto mediante dos tareas:
 
 _BERT_ produce embeddings dinámicos de alta dimensionalidad. Además de generar representaciones, el modelo es diseñado para ser ajustado (fine-tuned) con una pequeña cantidad de datos específicos de la tarea.
 
-## Latent Dirichlet allocation
-
-La técnica de _latent Dirichlet allocation_ (LDA) fue introducida por David M. Blei, Andrew Y. Ng y Michael I. Jordan (2003) como un modelo generativo probabilístico para colecciones de datos discretos, como corpus textuales. El objetivo central de LDA es descubrir automáticamente “temas latentes” dentro de un conjunto de documentos, bajo la hipótesis de que cada documento está compuesto por una mezcla de varios temas, y que cada tema está definido por una distribución de palabras.
-
-Dado un corpus $D$ de $M$ documentos, donde cada documento $d$ contiene $N_d$ palabras (tokens) extraídas de un vocabulario de tamaño $V$, el modelo asume:
-
-- Cada docuento $d$ posee una distribución de probabilidad $\boldsymbol{\theta_d}$ sobre $K$ temas, con $\boldsymbol{\theta_d} \sim Dirichlet(\boldsymbol\alpha )$.
-- Cada tema $k$ dispone de una distribución de probabilidad $\boldsymbol{\phi_k}$ sobre el vocabulario, con $\boldsymbol{\phi_k} \sim Dirichlet (\boldsymbol{\beta})$.
-- Para cada palabra $n$ en el documento $d$ se elige un tema $z_{d,n}\sim Multinomial(\boldsymbol{\theta_d})$ y se genera la talabra $w_{d,n}\sim Multinomiall(\boldsymbol{\phi_{z_d,n}})$
-
-De esta forma, LDA constituye un modelo jerárquico bayesiano de tres niveles: (i) distribución de temas por documento, (ii) tema seleccionado para cada palabra, (iii) palabra generada desde la distribución de dicho tema.
-
-En la práctica, el objetivo del análisis con LDA es inferir, a partir de los datos observados, las distribuciones latentes $\{\boldsymbol{\theta_d}\}_{d=1}^{M},\space\{\boldsymbol{\phi_k}\}_{k=1}^K$ y las asignaciones de tema $z_{d,n}$. Dado que el cálculo exacto de la distribución posterior no tiene una solución directa, se emplean métodos aproximados que serán detallados más adelante.
-
-Una vez inferido el modelo, se pueden extraer resultados útiles como:
-
-- para cada tema $k$: las palabras con mayor probabilidad en $\boldsymbol{\phi_k}$, lo que permite interpretar el significado de este,
-- relacionar documentos entre sí, agruparlos, realizar análisis exploratorios, de clasificación, etc.
-
-LDA se apoya en dos supuestos clave. En primer lugar, adopta la hipótesis de bag-of-words: el orden de las palabras dentro de un documento se ignora y solo importa la cantidad de veces que cada término aparece. En segundo lugar, utiliza la distribución de Dirichlet como _prior_ conjugado de la distribución multinomial, lo cual permite modelar de manera natural distribuciones de probabilidad sobre conjuntos discretos y facilita la inferencia aproximada posterior.
-
-### LDA generativo
-
-Sea $K$ el número de temas y $V$ el tamaño del vocabulario.
-
-1. Para cada tema $k=1,...,K$ se genera una distribución de palabras
-
-$$\boldsymbol{\phi_k}\sim Dirichlet(\boldsymbol\beta)$$
-
-donde $\boldsymbol\beta$ es un vector de hiperparámetros de dimensión $V$ que controla la dispersión de las probabilidades de las palabras dentro de cada tema.
-
-2. Para cada documento $d=1,...,M$ se genera una distribución de temas
-
-$$\boldsymbol{\theta_d}\sim Dirichlet(\boldsymbol\alpha)$$
-
-donde $\boldsymbol\alpha$ es un vector de hiperparámetros de dimensión $K$ que regula cuán concentrada o dispersa es la mezcla de los temas del documento.
-
-3. Para cada palabra $n = 1,...,N_d$ de un documento $d$, se elige un tema latente
-
-$$z_{d,n}\sim Multinomial(\boldsymbol{\theta_d})$$
-y se elige una palabra del vocabulario condicionada al tema seleccionado
-
-$$w_{d,n}\sim Multinomial(\boldsymbol{\phi_{z_d,n}})$$
-
-Este procedimiento define la distribución conjunta
-
-$$p(\Phi, \Theta,Z,W\space|\space\alpha, \beta)=\prod_{k=1}^Kp(\phi_k|\beta)\prod_{d=1}^Mp(\theta_d|\alpha)\prod_{n=1}^{N_d}p(z_{d,n}|\theta_d)p(w_{d,n}|\phi_{z_d,n})$$
-
-Para ilustrar el funcionamiento del modelo generativo se considera un corpus simple con $K=2$ temas y un vocabulario de cuatro palabras
-
-$$V=\{\text{"programa", "entrevista", "economía", "inflación"}\}$$
-
-Y se definen los temas como:
-
-- Tema 1: entretenimiento
-
-$$\phi_1=(0.45,0.45,0.05,0.05)$$
-
-- Tema 2: actualidad
-
-$$\phi_2=(0.05,0.05,0.40,0.50)$$
-
-Para generar un documento $d$ con el modelo, el primer paso es definir una mezcla de temas, por ejemplo:
-
-$$\theta_d=(0.7,0.3)$$
-
-Suponiendo que el documento tendrá $N_d = 5$ palabras, el proceso generativo produce, para cada posición $n$, un tema $z_{d,n}$ y luego una palabra $w_{d,n}$. De esta manera, se obtiene:
-
-$$z_{d,n} = (1, 2, 1, 2, 1)$$
-
-$$w_{d,n}= (\text{"entrevista","economia","entrevista","economia","programa"})$$
-
-El documento $d$ queda completamente generado y se continúa el proceso con $d+1$.
-
-```{r echo=FALSE, warning=FALSE, error=FALSE, eval =FALSE,results='hide'}
-vocab = c("programa", "entrevista", "economia", "inflacion")
-phi1 <- c(0.45, 0.45, 0.05, 0.05)  # Tema 1: entretenimiento
-phi2 <- c(0.05, 0.05, 0.40, 0.50)  # Tema 2: actualidad
-theta <- c(0.7, 0.3)
-N <- 5
-z <- sample(1:2, size = N, replace = TRUE, prob = theta)
-w <- sapply(z, function(topic) sample(vocab, 1, prob = 
-                                      if (topic == 1) phi1 else phi2))
-data.frame(
-  posicion = 1:N,
-  tema_elegido = z,
-  palabra_generada = w
-)
-```
-
-### Inferencia con LDA
-
-El problema central de LDA es recuperar, a partir de las palabras observadas, las estructuras latentes que las generaron: las mezclas de temas por documento $\{\theta_d\}$, las distirbuciones de palabras por tema $\{\phi_k\}$ y las asignaciones de tema para cada palabra $\{z_{d,n}\}$. Y, en definitiva, calculas la distribución a posterior $p(\Phi, \Theta,Z,W\space|\space\alpha, \beta)$.
-
-Blei, Ng y Jordan (2003) demostraron que esta distribución posterior no es analíticamente resoluble debido a la dependencia que tienen las distribuciones entre sí. Esto significa que la “solución exacta” al modelo inverso es intratable. En consecuencia, LDA requiere recurrir a métodos aproximados de inferencia bayesiana como _Collapsed Gibbs Sampling_ (CGS), que es el método empleado en esta tesina.
-
-En el contexto de LDA, CGS (Griffiths & Steyvers, 2004) aparece con la idea de “colapsar” (integrar) las variables $\Theta$ y $\Phi$, aprovechando la conjugación Dirichlet-Multinomial, y tomar muestras únicamente de las variables latentes de asignación $Z$. De esta manera, la muestra posterior de cada $z_{d,n}$ depende únicamente de conteo de palabras y temas observados en el resto del corpus.
-
-$$p(z_{d,n}=k|Z_{¬(d,n)},W,\alpha,\beta) \propto (n^{¬(d,n)}_{d,k}+\alpha_k)\frac{n^{¬(d,n)}_{k,w_{d,n}}+\beta_{w_{d,n}}}{n_k^{¬(d,n)}+\sum_v\beta_v}$$
-
-Donde:
-
-- $n^{¬(d,n)}_{d,k}$ es la cantidad de palabras del documento $d$ asignadas al tema $k$ excluyendo la posición $n$,
-
-- $n^{¬(d,n)}_{k,w_{d,n}}$ es la cantidad de veces que la palabra $w$ fue asignada al tema $k$ en todo el corpus, excluyendo la posición $n$,
-
-- $n_k^{¬(d,n)}$ es el total de palabras asignadas al tema $k$.
-
-Este muestreo se repite típicamente durante cientos o miles de iteraciones. La convergencia se logra cuando las asignaciones $Z$ dejan de variar significativamente.
-
-Una vez estimados los conteos, se reconstruyen las distribuciones posteriores mediante:
-
-$$\hat{\theta}_{d,k}=\frac{n_{d,k}+\alpha_k}{\sum_{k'}(n_{d,k'}+\alpha_{k'})},\space\space\space\hat\phi_{k,v}=\frac{n_{k,v}+\beta_v}{\sum_{v'}(n_{k,v'}+\beta_{v'})}$$
-
-Estos estimadores son medias posteriores y permiten interpretar los temas y la mezcla por documento.
-
-Para ilustrar el mecanismo de inferencia de LDA, se presenta un corpus mínimo y completamente controlado, lo que permite observar de forma explícita cómo funciona una iteración de muestreo Gibbs (Collapsed Gibbs Sampling).
-
-- D1: perro gato.
-- D2: gato maulla.
-- D3: perro corre
-
-$$V=\{\text{"perro","gato","maúlla","corre"}\}$$
-
-Suponiendo que existen $K=2$ temas y que los hiperparámetros se fijan en valores simétricos ($\alpha = (1,1)\text{ y }\beta=$), se comienza el procedimiento asignando un tema inicial a cada palabra del corpus (\@ref(tab:lda1)). Luego, se definen los conteos iniciales: cuántas palabras del documento $d$ están en el tema $k$, cuántas veces la palabra $w$ se asigna al tema $k$ y el total de palabras del tema $k$.
-
-Para cada palabra $w_{d,n}$, se calcula su probabilidad a posteriori de los temas latentes empleando Gibbs. Es decir, la probabilidad de que la palabra en la posición $n$ del documento $d$ pertenezca al tema $k$, dado el resto de la información del corpus.
-
-(ver si sumar un uso manual de gibbs para 1 palabra)
-
-El siguiente código ajusta el modelo descrito utilizando la librería `topicmodels`, que cuenta con la función `LDA`. La Tabla \@ref(tab:lda3) corresponde a la estimación posterior de $\boldsymbol\theta$, la mezcla de temas para cada documento. Dado que los documentos del ejemplo contienen pocas palabras y combinan términos asociados a ambos temas, las mezclas resultan uniformes $(0.5, 0.5)$. Este comportamiento es esperable en corpus tan pequeños, donde el modelo no cuenta con suficiente evidencia para asignar un tema dominante.
-
-La Tabla \@ref(tab:lda4) corresponde a $\boldsymbol\phi$, la distribución de palabras dentro de cada tema. Aquí sí se observa una clara diferenciación: un tema asigna alta probabilidad a las palabras asociadas al léxico “gato–corre”, mientras que el otro concentra probabilidad en “perro–maulla”. Esto indica que, incluso con pocos datos, _Gibbs Sampling_ recupera patrones temáticos coherentes y consistentes con la estructura del corpus.
-
-```{r, warning=FALSE}
-library(topicmodels)
-library(tm)
-
-docs <- c("perro gato",
-          "gato maulla",
-          "perro corre")
-
-corpus <- Corpus(VectorSource(docs))
-dtm <- DocumentTermMatrix(corpus,
-                          control=list(
-                            tolower=TRUE,
-                            removePunctuation=TRUE,
-                            stopwords=FALSE))
-
-# LDA vía Gibbs
-modelo <- topicmodels::LDA(dtm, k=2, method="Gibbs",
-              control=list(seed=123, iter=500))
-
-# Mezcla de temas por documento (theta)
-temas_doc <- round(posterior(modelo)$topics, 2)
-
-# Distribución de palabras por tema (phi)
-pal_temas <- round(posterior(modelo)$terms, 2)
-```
-
-```{r lda3, warning=FALSE, message=FALSE, echo=FALSE}
-kable(temas_doc, "latex", booktabs = TRUE,
-      caption = "Mezcla de temas por documento") %>%
-  kable_styling(latex_options="HOLD_position")
-```
-
-```{r lda4, echo=FALSE, warning=FALSE, message=FALSE}
-kable(pal_temas, "latex", booktabs = TRUE,
-      caption = "Mezcla de palabras por tema") %>%
-  kable_styling(latex_options="HOLD_position")
-```
-
 \newpage
-
-## Latent Dirichlet allocation
-
-La técnica de _latent Dirichlet allocation_ (LDA) fue introducida por David M. Blei, Andrew Y. Ng y Michael I. Jordan (2003) como un modelo generativo probabilístico para colecciones de datos discretos, como lo son los corpus textuales. El objetivo central de LDA es descubrir temas latentes o escondidos dentro de un conjunto de documentos bajo la hipótesis de que cada documento está compuesto por una mezcla de varios temas, y que cada tema está definido por una distribución de palabras.
-
-En LDA, una palabra se denomina como la unidad básica de los datos, es un elemento de un vocabulario indexado por $\{1,2,...,V\}$ y se representa como un vector de base unitaria de dimensión $V$. En este sentido, la palabra en la posición $v$ del vocabulario, es un vector $w$ donde $w_v=1$ y $w_u = 0$ $\forall u \neq v$. Teniendo esta definición, un documento es una secuencia de $N$ palabras $\boldsymbol w =(w_1,w_2,...,w_N)$ y un corpus es una colección de $M$ documentos $D=\{\boldsymbol w _1, \boldsymbol w _2,..., \boldsymbol w _M\}$
-
-El modelo define a un tema como una distribución de probabilidad sobre un vocabulario, es decir, una lista de palabras posibles donde cada una tiene una probabilidad asociada. Así, si se presenta un tema que tiene probabilidad alta en palabras como "investigación", "datos", "experimento" o "célula" y una baja probabilidad en palabras como "fútbol" o "presidente", se puede definir como _ciencia_. LDA solo ve patrones de palabras que coexisten y luego, el ojo humano, le pone la etiqueta. 
-
-LDA asume el siguiente proceso generativo para cada documento $\boldsymbol w$ en $D$:
-
-\begin{enumerate}
-\item Se selecciona una cantidad de palabras $N\sim Poisson(\xi)$,
-\item se selecciona una distribución de temas $\theta\sim Dirichlet(\boldsymbol\alpha)$,
-\item para cada posición $n$ en el documento:
-\begin{enumerate}
-\item se selecciona un tema $z_n \sim Multinomial(\boldsymbol\theta)$,
-\item se selecciona una palabra $w_n$ de $p(w_n|z_n, \boldsymbol\beta)$, una función de probabilidad condicionada por el tema.
-\end{enumerate}
-\end{enumerate}
-
-Asi, se define la distribución conjunta de la mezcla de temas, el conjunto de temas y el conjunto de palabras como
-
-$$p(\boldsymbol\theta, \boldsymbol z, \boldsymbol w | \boldsymbol\alpha, \boldsymbol\beta )=p(\boldsymbol\theta|\boldsymbol\alpha)\times p(\boldsymbol z|\boldsymbol\theta) \times p(\boldsymbol w|\boldsymbol\beta, \boldsymbol z)$$
-
-
-
-
-
-
-
-
-
-
-
-Sea $\boldsymbol\theta$ un vector aleatorio de dimensión $K>2$ donde $\theta_i\in[0,1]$ $\forall i=1, 2,...,K$ y $\sum_{i=1}^K \theta_i = 1$, se puede decir que $\boldsymbol\theta\sim Dirichlet(\boldsymbol\alpha)$ donde $\boldsymbol\alpha$ es un vector de probabilidades de dimensión $K$.
-
-La función de probabilidad está dada por
-$$f(\boldsymbol\theta;\boldsymbol\alpha) = \frac{1}{B(\boldsymbol\alpha)}\prod_{i=1}^K \theta_i^{\alpha_i-1}$$
-
-Esta distribución es una generalización de la distribución Beta, y es llamada la distribución de distribuciones.
-
-
 
 # Bibliografía
 
