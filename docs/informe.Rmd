@@ -295,7 +295,6 @@ Un modelo es jerárquico si puede factorizaste en una cadena de dependencias con
 La fuerza de los modelos jerárquicos es su adaptabilidad a distintos casos de estudio ya que se pueden aplicar a modelos con múltiples dependencias (niveles escalables) y a parámetros clasificados según un agrupamiento. Por ejemplo, para un caso de dos grupos, el modelo jerárquico se vería como en la Figura \@ref(fig:fig2).
 
 ```{r fig2, fig.cap= "Diagrama del flujo de un modelo jerárquico a 3 niveles con dos grupos", echo=FALSE, warning=FALSE, fig.align='center', fig.width=10,fig.height=7, out.width="90%"}
-library(knitr)
 knitr::include_graphics("figs/modelo_jerarquico.png")
 ```
 
@@ -314,7 +313,6 @@ Para ilustrar el concepto con el caso del usuario y su comentario en YouTube, se
 2. se elige una palabra del tópico según $\boldsymbol\beta$.
 
 ```{r fig3, fig.cap= "Diagrama del flujo de un modelo jerárquico a 3 niveles con dos grupos", echo=FALSE, warning=FALSE, fig.align='center', fig.width=10, fig.height=7, out.width="90%"}
-library(knitr)
 knitr::include_graphics("figs/modelo_jerarquico_ejemplo.png")
 ```
 
@@ -563,8 +561,6 @@ El método de corrección basado en la distancia de Levenshtein-Damerau se funda
 En la Tabla \@ref(tab:tablaburri) se muestran todas las palabras generadas a partir de la palabra errónea `burri` con una sola operación de edición. 
 
 ```{r tablaburri, echo=FALSE, warning=FALSE, message=FALSE, }
-library(knitr)
-
 tabla_op <- data.frame(
   Operación = c("Eliminación", "Inserción", "Sustitución", "Transposición"),
   `Palabras generadas` = c(
@@ -741,7 +737,8 @@ ggplot(matriz_melted, aes(Var1, Var2, fill = value)) +
   geom_text(aes(Var2, Var1, label = value), color = "grey30", size = 4) +
   labs(x = "Documento", y = "Documento") +
   coord_fixed() +
-  theme_minimal()
+  theme_minimal() +
+  theme(text = element_text(family = "serif"))
 ```
 
 #### TF-IDF {-}
@@ -847,6 +844,49 @@ El modelo se preentrena sobre grandes volúmenes de texto mediante dos tareas:
 _BERT_ produce embeddings dinámicos de alta dimensionalidad. Además de generar representaciones, el modelo es diseñado para ser ajustado (fine-tuned) con una pequeña cantidad de datos específicos de la tarea.
 
 \newpage
+
+# Aplicación práctica
+
+En este apartado se expone la aplicación práctica de las técnicas de procesamiento de lenguaje natural (NLP) y del modelo latent Dirichlet allocation (LDA) sobre la base de comentarios recolectados de YouTube. El objetivo es mostrar, paso a paso, cómo los procedimientos teóricos previamente descritos se implementan en un corpus real, abarcando desde la carga inicial de los datos hasta la construcción de la matriz documento–término y el posterior modelado de tópicos.
+
+## Recolección de datos: comentarios de YouTube
+
+Utilizando la API de YouTube brindada por el servicio de Google Cloud y con la herramienta App Scripts integrada en SpreadSheets (Google), se realizó una recolección de informacion básica de los videos publicados entre el 1 de enero del 2023 y el 21 de diciembre del 2024 de los canales más vistos del país: LuzuTV, Olga, Un Poco De Ruido, La Casa Streaming, Bondi Live, Vorterix, Ubana Play y Blender. Luego, filtrando solo los videos con duración mayor a 10 minutos (para evitar incluir *shorts* o recortes), se utilizó la misma API conectada a R (versión 4.4.0) y el paquete `tuber` para la recolección de comentarios de los videos identificados en la primer instancia (\hyperref[sec-anexoA]{\underline{\text{Anexo}}}). En la Tabla \@ref(tab:recoleccion1) se puede identificar la cantidad de información recolectada para cada canal de *streaming*.
+
+```{r carga, results='hide', warning=FALSE, message=FALSE, echo=FALSE, } 
+library(readxl)
+library(janitor)
+library(lubridate)
+
+comentarios <- read_excel("data/processed/comentarios_procesado_1.xlsx")
+
+comentarios <- comentarios %>%
+  mutate(correccion = str_replace_all(
+    string = correccion,
+    pattern = regex("(?i)\\b((j|k)+[aeiou]+){2,}[a-z]*\\b|\\b[jks]{3,}\\b"),
+    replacement = "risa"
+  )
+  )
+
+videos <- read_excel("data/raw/videos.xlsx")
+
+base <- videos %>%
+  left_join(comentarios, by = c("video_id" = "videoId")) %>%
+  filter(publishedAt <= as.Date("05/09/2025", "%d/%m/%Y")) %>% 
+  distinct()
+
+diferencias <- c(
+  sum(Luzu$comentarios_api)-nrow(comentarios_luzu),
+  sum(Olga$comentarios_api)-nrow(comentarios_olga),
+  sum(Unpoco$comentarios_api)-nrow(comentarios_unpoco),
+  sum(Lacasa$comentarios_api)-nrow(comentarios_lacasa),
+  sum(Bondi$comentarios_api)-nrow(comentarios_bondi),
+  sum(Vorterix$comentarios_api)-nrow(comentarios_vorterix),
+  sum(Urbana$comentarios_api)-nrow(comentarios_urbana),
+  sum(Blender$comentarios_api)-nrow(comentarios_blender))
+```
+
+
 
 # Bibliografía
 
