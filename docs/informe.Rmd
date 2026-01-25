@@ -29,6 +29,8 @@ csl: apa.csl
 link-citations: true  # convierte citas en links a la lista final
 nocite: |
   @*
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r results='hide', message=FALSE, echo=FALSE, warning=FALSE}
@@ -476,7 +478,7 @@ Otra estrategia consiste en identificar fuentes relevantes de datos en internet,
 
 En la práctica, los conjuntos de datos suelen provenir de fuentes heterogéneas, como *datasets* públicos, datos etiquetados manualmente y datos de internet, al mismo tiempo. Esta combinación es especialmente útil para construir modelos en etapas iniciales, cuando los datos específicos para un escenario particular son limitados.
 
-En esta tesina se optó por hacer uso de una *API* de Google para obtener los datos de entrada para el análisis, este proceso será detallado en la sección \@ref(sec:aplicacionpractica).
+En esta tesina se optó por hacer uso de una *API* de Google para obtener los datos de entrada para el análisis, este proceso será detallado en la sección Aplicación práctica.
 
 Esta etapa es crucial para garantizar la disponibilidad de datos limpios y útiles, que son la base para las siguientes etapas de procesamiento y modelado. Una vez que se cuenta con los datos recolectados, se procede al siguiente paso: la limpieza y el preprocesamiento de texto.
 
@@ -853,14 +855,23 @@ En este apartado se expone la aplicación práctica de las técnicas de procesam
 
 Utilizando la API de YouTube brindada por el servicio de Google Cloud y con la herramienta App Scripts integrada en SpreadSheets (Google), se realizó una recolección de informacion básica de los videos publicados entre el 1 de enero del 2023 y el 21 de diciembre del 2024 de los canales más vistos del país: LuzuTV, Olga, Un Poco De Ruido, La Casa Streaming, Bondi Live, Vorterix, Ubana Play y Blender. Luego, filtrando solo los videos con duración mayor a 10 minutos (para evitar incluir *shorts* o recortes), se utilizó la misma API conectada a R (versión 4.4.0) y el paquete `tuber` para la recolección de comentarios de los videos identificados en la primer instancia (\hyperref[sec-anexoA]{\underline{\text{Anexo}}}). En la Tabla \@ref(tab:recoleccion1) se puede identificar la cantidad de información recolectada para cada canal de *streaming*.
 
-```{r carga, results='hide', warning=FALSE, message=FALSE, echo=FALSE, } 
+```{r recoleccion1, warning=FALSE, message=FALSE, echo=FALSE} 
 library(readxl)
 library(janitor)
 library(lubridate)
+library(stringr)
+library(tidytext)
 
-comentarios <- read_excel("data/processed/comentarios_procesado_1.xlsx")
+comentarios <- rbind(
+  read_excel("data/processed/comentarios_procesado_1.xlsx"),
+  read_excel("data/processed/comentarios_procesado_2.xlsx")
+) %>%
+  distinct()
 
 comentarios <- comentarios %>%
+  mutate(correccion = str_remove_all(correccion, "&[a-z]+;|<[^>]+>")) %>%
+  filter(!is.na(correccion), correccion != "") %>%
+  mutate(correccio = gsub(c("quot", "amp", "br", "lt", "gt", "nbsp", "na", "NA"),"",correccion)) %>%
   mutate(correccion = str_replace_all(
     string = correccion,
     pattern = regex("(?i)\\b((j|k)+[aeiou]+){2,}[a-z]*\\b|\\b[jks]{3,}\\b"),
@@ -875,18 +886,125 @@ base <- videos %>%
   filter(publishedAt <= as.Date("05/09/2025", "%d/%m/%Y")) %>% 
   distinct()
 
-diferencias <- c(
-  sum(Luzu$comentarios_api)-nrow(comentarios_luzu),
-  sum(Olga$comentarios_api)-nrow(comentarios_olga),
-  sum(Unpoco$comentarios_api)-nrow(comentarios_unpoco),
-  sum(Lacasa$comentarios_api)-nrow(comentarios_lacasa),
-  sum(Bondi$comentarios_api)-nrow(comentarios_bondi),
-  sum(Vorterix$comentarios_api)-nrow(comentarios_vorterix),
-  sum(Urbana$comentarios_api)-nrow(comentarios_urbana),
-  sum(Blender$comentarios_api)-nrow(comentarios_blender))
+fotos <- c("figs/logos_streaming/luzu.png", "figs/logos_streaming/olga.png", "figs/logos_streaming/un_poco_de_ruido.png", 
+           "figs/logos_streaming/la_casa.png", "figs/logos_streaming/bondi.png","figs/logos_streaming/vorterix.png" , 
+           "figs/logos_streaming/urbana.png", "figs/logos_streaming/blender.png")
+
+foto_latex <- sprintf("\\includegraphics[width=0.9cm]{%s}", fotos)
+
+conteo_videos <- videos %>%
+  group_by(canal) %>%
+  summarise(videos = n(), comentarios = sum(comentarios_api))
+
+tabla <- videos %>%
+  select(video_id,canal) %>%
+  left_join(comentarios , by = c("video_id" = "videoId")) %>%
+  group_by(canal) %>%
+  summarise(comentarios = n()) %>%
+  left_join(videos %>%
+  group_by(canal) %>%
+  summarise(videos = n(), comentarios_api = sum(comentarios_api)), by = c("canal" = "canal")) %>%
+  mutate(diferencia = comentarios_api-comentarios,
+         foto = foto_latex)
+
+fila_total <- data.frame(
+  canal = "Total",
+  comentarios = sum(tabla$comentarios, na.rm = TRUE),
+  videos = sum(tabla$videos, na.rm = TRUE),
+  comentarios_api = sum(tabla$comentarios_api, na.rm = TRUE),
+  diferencia = "",
+  foto = "",
+  check.names = FALSE
+)
+
+tabla_final <- rbind(tabla, fila_total) %>%
+  select(
+    Fotos = foto,
+    Canal = canal,
+    Videos = videos,
+    `Comentarios API` = comentarios_api,
+    `Comentarios Recolectados` = comentarios
+  )
+
+kable(tabla_final,
+      format   = "latex",
+      booktabs = TRUE,
+      escape   = FALSE,
+      align    = c("c","l","r","r","r"),
+      caption  = "Información recolectada de cada canal",
+      format.args = list(big.mark = ".", decimal.mark = ",")) %>%
+  kable_styling(full_width = FALSE, position = "center", latex_options = "hold_position") %>%
+  row_spec(0, extra_css = "vertical-align: middle !important;") %>%
+  row_spec(nrow(tabla_final), background = "gray!15", bold = TRUE)
+
+correcciones <- read_excel("data/processed/correcciones_1.xlsx")
 ```
 
+Es de destacar que la API de YouTube cuenta con un límite de consulta para las respuestas a comentarios: se retienen únicamente los primeros 5 comentarios por cadena (es decir, el comentario original y las respuestas anidadas a este). Sin embargo, por estar dentro de un mismo "hilo", estos comentarios no cambian drásticamente en su temática y no afecta los fines de esta investigación. Además, el límite mencionado no permite tomar toda la información de una sola corrida, hubo que realizar la recolección de a un día por canal usando dos conexiones en simultáneo. Esta diferencia en la recolección se mitiga filtrando los comentarios según su fecha de publicación previa al día 05/09/2025 (día de la primera recolección). 
 
+## Limpieza de comentarios
+
+En total se recopilaron `r format(sum(tabla$comentarios), big.mark = ".", scientific = FALSE)` comentarios a los que se les aplicó una secuencia de preprocesamiento estándar en NLP:
+
+1. Eliminación de enlaces web y *hashtags* con hipervínculos.
+2. Minúsculas: conversión completa del texto a minúscula para evitar duplicidad por capitalización.
+3. Colapso de vocales repetidas: reducción de alargamientos (“amoo”, “encantaa” $\rightarrow$ “amo”, “encanta”), útil para comentarios informales.
+4. Filtrado de caracteres: se conservaron únicamente letras del alfabeto español (incluyendo tildes y “ñ”) y espacios, eliminando números, emojis y signos.
+5. Normalización de espacios: supresión de espacios múltiples.
+6. Eliminación de stopwords: remoción de palabras que no aportan carga semántica.
+
+Con el objetivo de asistir la corrección ortográfica y preservar la jerga propia del dominio, se construyó un diccionario combinado a partir de dos fuentes: por un lado, las 20.000 palabras más frecuentes del propio corpus de comentarios y, por otro, un listado exhaustivo de palabras en español extraído de la base *Kaikki.org*, que recopila el contenido de *Wiktionary*. De esta manera, el diccionario resultante no solo incorpora modismos, nombres propios y expresiones características del corpus analizado, sino también un repertorio amplio de formas válidas del idioma español, constituyendo así una base más robusta para la etapa de corrección ortográfica.
+
+La estrategia propuesta para la corrección ortográfica es identificar *tokens* fuera del diccionario y proponer correcciones mediante la distancia de Leveinshtein-Damerau. En caso de empate en la distancia mínima, se seleccionará como corrección al candidato de mayor frecuencia en el diccionario, lo que favorece a las expresiones más habituales del corpus. Si bien Damerau sugiere que la gran mayoría de los errores se corrigen con una sola edición, en el presente trabajo se adoptó un umbral máximo de distancia menor o igual a 3. Esta decisión responde a la naturaleza del corpus, comentarios de YouTube, donde son habituales errores acumulados o repeticiones de caracteres.
+
+Para optimizar el proceso de corrección, se incorporó un filtro preliminar basado en bigramas de caracteres, entendidos como secuencias de dos caracteres consecutivos dentro de una palabra. El procedimiento consiste en comparar los bigramas del *token* erróneo con los de cada candidato del diccionario y conservar únicamente aquellos que presentan al menos dos coincidencias. De este modo, se descartan antes del cálculo de la distancia de edición aquellas palabras que no comparten una estructura básica con el *token* original. Por ejemplo, la palabra `burri` genera los bigramas `bu`, `ur`, `rr` y `ri`. El candidato `burro` supera el filtro, ya que comparte los bigramas `bu`, `ur` y `rr`, mientras que `casa` no lo cumple, dado que ninguno de sus bigramas (`ca`, `as`, `sa`) coincide con los del término analizado.
+
+En la Tabla \@ref(tab:correccion) se pueden ver algunos ejemplos de la corrección realizada para _tokens_ erróneos y su frecuencia de aparición, en total se aplicaron correcciones efectivas en `r format(sum(correcciones$token != correcciones$correccion, na.rm=TRUE), big.mark = ".", scientific = FALSE)` _tokens_ únicos.
+
+```{r correccion, warning=FALSE, message=FALSE, echo=FALSE}
+set.seed(2026)
+tabla_correccion <- correcciones %>%
+  select(`Palabra original` = token, `Corrección` = correccion, Frecuencia = frecuencia) %>%
+  sample_n(5) 
+kable(tabla_correccion,
+      format   = "latex",
+      booktabs = TRUE,
+      escape   = FALSE,
+      caption  = "Correcciones realizadas",
+      format.args = list(big.mark = ".", decimal.mark = ",")) %>%
+  kable_styling(full_width = FALSE, position = "center", latex_options = "hold_position") %>%
+  row_spec(0, extra_css = "vertical-align: middle !important;")
+```
+
+Además, se aplicó una regla de normalización específica para las manifestaciones de risa escrita. Dada la alta variabilidad morfológica de estas expresiones (ej. "jajaja", "jeje", "jsjsjs", "kjjjj"), tratarlas como términos distintos diluiría su peso semántico en el modelo. Para solucionar esto, se diseñó una expresión regular capaz de capturar dos patrones principales: secuencias repetidas de consonantes  (j, k) seguidas de vocales (ej. "jajaja") y secuencias de tres o más caracteres restringidos a "j", "k" y "s", comunes en la jerga digital actual (ej. "jsjsjs"). Todas las coincidencias fueron reemplazadas por el token único "risa". Esta unificación permite que el algoritmo LDA interprete correctamente la reacción de la audiencia como un único concepto, independientemente de la grafía utilizada por el usuario.
+
+Finalmente, se eliminaron etiquetas _html_ que pudieron pasar los filtros y correcciones anteriores como _quot_, _br_ y _amp_. **COMENTAR NO LEMATIZACIÓN**.
+
+A modo de exploración inicial, se analizó la frecuencia de términos resultantes. La Figura @ref(fig:frecuencias) exhibe los 20 términos más preponderantes en el corpus global.
+
+```{r frecuencias, fig.cap= "20 términos más frecuentes luego de la limpieza", echo=FALSE, warning=FALSE, fig.align='center',echo=FALSE, warning=FALSE, message=FALSE, fig.width=5, fig.height=4, out.width="70%"}
+tokens_frec <- base %>%
+  select(correccion) %>%
+  unnest_tokens(word, correccion) %>%
+  filter(nchar(word) > 2) %>%
+  group_by(word) %>%
+  summarise(frecuencia = n()) %>%
+  arrange(desc(frecuencia)) %>%
+  slice_max(frecuencia, n = 20)
+
+ggplot(tokens_frec, aes(x = frecuencia, y = reorder(word, frecuencia))) +
+  geom_col(fill = "#F6BD60") +
+  labs(x = "Frecuencia absoluta", y = NULL) +
+  theme_grey(base_family = "serif")
+```
+
+En primer lugar, la aparición tan frecuente del término "risa" valida la decisión metodológica de normalizar las expresiones. Si no se hubieran unificado las variantes (como "jajaja", "jsjsjs"), el listado de palabras habría aumentado mucho y se habría perdido la fuerza de la risa dentro de los comentarios de cada video. En segundo lugar, se observa un sentimiento predominante de adhesión positiva, términos como "amo", "mejor", "gracias", "bien" y "siempre" denotan una comunidad formada por los espectadores.
+
+Finalmente, el gráfico expone el que aparecen con alta frecuencia nombres propios de conductores específicos como "Nico" (Occhiato), "Flor" (Jazmín Peña) y figuras invitadas o referentes como "Cazu" (Cazzu), lo que anticipa que los tópicos latentes probablemente se agruparán no solo por temáticas abstractas, sino alrededor de personalidades y programas específicos.
+
+## Representación de los comentarios
+
+Una vez depurado el corpus y normalizadas las expresiones informales, es necesario transformar la información textual no estructurada en una representación numérica apta para el modelado probabilístico. 
 
 # Bibliografía
 
