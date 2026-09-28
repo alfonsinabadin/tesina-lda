@@ -1,30 +1,49 @@
-# R / RStudio
+# R / RStudio ------------------------------------------------------------------
 .Rhistory
 .RData
 .Rproj.user/
+.Ruserdata
 
-# Datos pesados
-data/raw/**
-data/processed/**
-*.rds
-*.RDS
-*.csv
-*.xlsx
-*.zip
-
-# Salidas
-output/**
-!output/figuras/**
-!output/tablas/**
-
-# Archivos auxiliares
+# Sistema ----------------------------------------------------------------------
 .DS_Store
 __pycache__/
+
+# LaTeX / knit -----------------------------------------------------------------
 *.log
 *.aux
 *.out
 *.toc
 *.bbl
 *.blg
+docs/informe.tex
+docs/informe_files/
+docs/*_cache/
 
-.docs
+# Datos pesados (se publican como Release; ver README) --------------------------
+docs/data/raw/
+docs/data/processed/
+docs/data/modelos/
+docs/data/dtm*.rds
+docs/data/dictionaries/*.rds
+docs/data/dictionaries/*.jsonl
+docs/data/convergencia/cadena_*.rds
+*.xlsx
+*.csv
+*.zip
+
+# Resultados livianos que sí se versionan ---------------------------------------
+!docs/data/resultados/
+!docs/data/resultados/*.rds
+!docs/data/convergencia/
+!docs/data/convergencia/diagnosticos.rds
+**/respaldo_beta_incorrecto/
+
+# Archivos de trabajo que no se suben -------------------------------------------
+*respaldo*
+Copia de *
+*_log.txt
+codigos/
+docs/codigo lda.R
+docs/codigo_def_lda.R
+docs/reajuste_modelos.R
+docs/convergencia_modelos.R
